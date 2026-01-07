@@ -2,6 +2,7 @@ const mailjet = require('node-mailjet');
 
 /**
  * Simple logger for Auth0 custom email provider
+ * NOTE: Not shown in Auth0 environment; for local testing only
  */
 class Auth0EmailLogger {
   constructor() {
@@ -47,7 +48,7 @@ exports.onExecuteCustomEmailProvider = async (event, api) => {
   try {
     // Extract email details from the event
     const to = event.notification.to;
-    const toName = event.user.nickname;
+    const toName = event.user.name;
     const subject = event.notification.subject;
     const textBody = event.notification.text;
     const htmlBody = event.notification.html;
