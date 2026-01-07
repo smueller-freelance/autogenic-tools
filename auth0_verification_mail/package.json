@@ -1,0 +1,36 @@
+{
+  "name": "auth0-custom-email-provider",
+  "version": "2.0.0",
+  "description": "Auth0 Custom Email Provider using Mailjet with Be Autogenic branding",
+  "main": "auth0_custom_email_provider.js",
+  "scripts": {
+    "test": "node test_auth0_email_provider.js",
+    "start": "echo \"This is an Auth0 custom email provider, not a standalone service\""
+  },
+  "dependencies": {
+    "node-mailjet": "^6.0.0",
+    "axios": "^1.6.2",
+    "fs": "0.0.1-security",
+    "path": "^0.12.7"
+  },
+  "engines": {
+    "node": ">=14.0.0"
+  },
+  "keywords": [
+    "auth0",
+    "email",
+    "mailjet",
+    "custom-provider",
+    "be-autogenic"
+  ],
+  "author": "Autogenic Team",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/your-repo/auth0-custom-email-provider.git"
+  },
+  "bugs": {
+    "url": "https://github.com/your-repo/auth0-custom-email-provider/issues"
+  },
+  "homepage": "https://github.com/your-repo/auth0-custom-email-provider#readme"
+}

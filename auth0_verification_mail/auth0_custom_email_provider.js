@@ -1,4 +1,7 @@
 const mailjet = require('node-mailjet');
+const axios = require('axios');
+const fs = require('fs');
+const path = require('path');
 
 /**
  * Simple logger for Auth0 custom email provider
@@ -27,17 +30,258 @@ class Auth0EmailLogger {
     }
   }
 
+  warn(message, context = {}) {
+    if (this._shouldLog('warn') || this._shouldLog('debug')) {
+      console.warn(`[WARN] ${new Date().toISOString()} - ${message}`, context);
+    }
+  }
+
   _shouldLog(level) {
     const levels = {
       debug: 0,
       info: 1,
-      error: 2
+      warn: 2,
+      error: 3
     };
     return levels[level] >= levels[this.logLevel];
   }
 }
 
 const logger = new Auth0EmailLogger();
+
+// App color palette matching Be Autogenic branding
+const EMAIL_COLORS = {
+  primary_blue: '#5B9BD5',
+  soft_lavender: '#B4A7D6',
+  calm_green: '#70AD47',
+  light_beige: '#F4F1E8',
+  soft_gray: '#E6E6E6',
+  dark_gray: '#4A4A4A',
+  white: '#FFFFFF',
+  success_green: '#70AD47',
+  error_red: '#D9534F'
+};
+
+// Email translations for different languages
+const EMAIL_TRANSLATIONS = {
+  'en': {
+    app_name: 'Be Autogenic',
+    tagline: 'Your journey to relaxation and better sleep',
+    footer_text: 'This email was sent to you because you have an account with Be Autogenic.',
+    hi: 'Hi',
+    best_regards: 'Best regards',
+    the_team: 'The Be Autogenic Team',
+    welcome_subject: 'Welcome to Be Autogenic!',
+    welcome_title: 'Welcome to Be Autogenic!',
+    welcome_intro: 'We\'re thrilled to have you on board! You\'ve just taken the first step toward a more relaxed, peaceful you.',
+    welcome_account_ready: '✓ Your account is ready!',
+    welcome_account_text: 'You can now start creating personalized autogenic training sessions tailored to your needs.',
+    welcome_whats_next: 'What\'s next?',
+    welcome_whats_next_intro: 'Here are a few things you can explore:',
+    welcome_create_session: 'Create your first session – Customize it with your preferred language and settings',
+    welcome_discover: 'Discover autogenic training – Learn about this powerful relaxation technique',
+    welcome_set_routine: 'Set your routine – Regular practice brings the best results',
+    welcome_closing: 'Remember, the journey to deep relaxation starts with a single session. We\'re here to support you every step of the way.',
+    welcome_sign_off: 'Wishing you peaceful moments,',
+    verify_subject: 'Verify Your Email Address',
+    verify_title: 'Verify Your Email Address',
+    verify_intro: 'Welcome to Be Autogenic! Please verify your email address to complete your registration.',
+    verify_instructions: 'Click the button below to verify your email address:',
+    verify_button: 'VERIFY EMAIL ADDRESS',
+    verify_expiration: 'This verification link will expire in 24 hours.',
+    verify_help: 'If you didn\'t request this verification, you can safely ignore this email.',
+    verify_sign_off: 'Looking forward to helping you relax,'
+  }
+};
+
+function getTranslation(key, lang = 'en') {
+  return EMAIL_TRANSLATIONS[lang]?.[key] || EMAIL_TRANSLATIONS['en'][key] || key;
+}
+
+/**
+ * Get base64 encoded image data from URL or local file
+ */
+async function getImageBase64(imageUrl) {
+  try {
+    // Try to download from URL first
+    const response = await axios.get(imageUrl, { responseType: 'arraybuffer' });
+    return Buffer.from(response.data, 'binary').toString('base64');
+  } catch (urlError) {
+    const errorMessage = urlError instanceof Error ? urlError.message : String(urlError);
+    logger.debug(`Failed to download image from URL: ${imageUrl}, trying local fallback: ${errorMessage}`);
+
+    // Try local fallback paths
+    const localPaths = [
+      path.join(__dirname, '..', '..', 'autogenic-backend', 'assets', 'images', path.basename(imageUrl)),
+      path.join(__dirname, '..', '..', 'autogenic-frontend', 'assets', 'images', path.basename(imageUrl)),
+      path.join(__dirname, '..', '..', 'medhubimpact', 'be-autogenic', path.basename(imageUrl))
+    ];
+
+    for (const localPath of localPaths) {
+      try {
+        if (fs.existsSync(localPath)) {
+          const imageData = await fs.promises.readFile(localPath);
+          return imageData.toString('base64');
+        }
+      } catch (localError) {
+        const localErrorMessage = localError instanceof Error ? localError.message : String(localError);
+        logger.debug(`Failed to read local image ${localPath}: ${localErrorMessage}`);
+      }
+    }
+
+    logger.warn(`No image found for ${imageUrl}, using placeholder`);
+    return ''; // Return empty string, will be handled by template
+  }
+}
+
+/**
+ * Get the Be Autogenic email template that matches the backend email service
+ */
+async function getBeAutogenicEmailTemplate(content, lang = 'en') {
+  const t = (key) => getTranslation(key, lang);
+
+  // Get base64 encoded images
+  const logoBase64 = await getImageBase64('https://medhubimpact.com/be-autogenic/logo_alpha.png');
+  const splashBase64 = await getImageBase64('https://medhubimpact.com/be-autogenic/splash_alpha.png');
+
+  return `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Be Autogenic</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background-color: ${EMAIL_COLORS.soft_gray};
+        }
+        .email-container {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: ${EMAIL_COLORS.white};
+        }
+        .header {
+            background: linear-gradient(135deg, ${EMAIL_COLORS.primary_blue} 0%, ${EMAIL_COLORS.soft_lavender} 100%);
+            padding: 40px 20px;
+            text-align: center;
+            position: relative;
+        }
+        .header-logo {
+            max-width: 200px;
+            height: auto;
+            margin-bottom: 10px;
+        }
+        .header h1 {
+            color: ${EMAIL_COLORS.white};
+            margin: 0;
+            font-size: 28px;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+        }
+        .content {
+            padding: 40px 30px;
+            color: ${EMAIL_COLORS.dark_gray};
+            line-height: 1.6;
+        }
+        .content h2 {
+            color: ${EMAIL_COLORS.primary_blue};
+            font-size: 24px;
+            margin-top: 0;
+            margin-bottom: 20px;
+        }
+        .content h3 {
+            color: ${EMAIL_COLORS.dark_gray};
+            font-size: 18px;
+            margin-top: 25px;
+            margin-bottom: 15px;
+        }
+        .content p {
+            margin: 0 0 16px 0;
+            font-size: 16px;
+        }
+        .button {
+            display: inline-block;
+            padding: 14px 32px;
+            margin: 20px 0;
+            background-color: ${EMAIL_COLORS.primary_blue};
+            color: ${EMAIL_COLORS.white} !important;
+            text-decoration: none;
+            border-radius: 12px;
+            font-weight: 500;
+            font-size: 16px;
+            text-align: center;
+        }
+        .card {
+            background-color: ${EMAIL_COLORS.light_beige};
+            border-radius: 16px;
+            padding: 20px;
+            margin: 20px 0;
+            border-left: 4px solid ${EMAIL_COLORS.primary_blue};
+        }
+        .success-card {
+            background-color: rgba(112, 173, 71, 0.1);
+            border-left-color: ${EMAIL_COLORS.success_green};
+        }
+        .error-card {
+            background-color: rgba(217, 83, 79, 0.1);
+            border-left-color: ${EMAIL_COLORS.error_red};
+        }
+        .footer {
+            background-color: ${EMAIL_COLORS.light_beige};
+            padding: 30px;
+            text-align: center;
+            color: ${EMAIL_COLORS.dark_gray};
+            font-size: 14px;
+            border-top: 1px solid ${EMAIL_COLORS.soft_gray};
+            position: relative;
+        }
+        .footer p {
+            margin: 8px 0;
+        }
+        .footer-splash {
+            max-width: 150px;
+            height: auto;
+            margin: 20px auto 10px;
+            opacity: 0.6;
+        }
+        .icon {
+            font-size: 48px;
+            margin-bottom: 10px;
+        }
+        @media only screen and (max-width: 600px) {
+            .content {
+                padding: 30px 20px;
+            }
+            .header h1 {
+                font-size: 24px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="email-container">
+        <div class="header">
+            ${logoBase64 ? `<img src="data:image/png;base64,${logoBase64}" alt="Be Autogenic Logo" class="header-logo" />` : '<h1>Be Autogenic</h1>'}
+        </div>
+        <div class="content">
+            ${content}
+        </div>
+        <div class="footer">
+            ${splashBase64 ? `<img src="data:image/png;base64,${splashBase64}" alt="Be Autogenic" class="footer-splash" />` : ''}
+            <p><strong>${t('app_name')}</strong></p>
+            <p>${t('tagline')}</p>
+            <p style="color: ${EMAIL_COLORS.soft_gray}; font-size: 12px; margin-top: 20px;">
+                ${t('footer_text')}
+            </p>
+        </div>
+    </div>
+</body>
+</html>
+`;
+}
 
 /**
  * Handler to be executed while sending an email notification
@@ -48,8 +292,8 @@ exports.onExecuteCustomEmailProvider = async (event, api) => {
   try {
     // Extract email details from the event
     const to = event.notification.to;
-    const toName = event.user.name;
-    const subject = event.notification.subject;
+    const toName = event.user?.name || event.user?.nickname || event.user?.email || 'User';
+    const subject = 'Verify your email for Be Autogenic';
     const textBody = event.notification.text;
     const htmlBody = event.notification.html;
 
@@ -62,6 +306,73 @@ exports.onExecuteCustomEmailProvider = async (event, api) => {
     if (!mailjetApiKey || !mailjetApiSecret) {
       logger.error('Mailjet credentials not configured. Cannot send email.');
       throw new Error('Mailjet not configured');
+    }
+
+    // Determine email type based on subject/content
+    //const isVerificationEmail = subject.toLowerCase().includes('verify') ||
+    //                           textBody.toLowerCase().includes('verify') ||
+    //                           htmlBody.toLowerCase().includes('verify');
+    const isVerificationEmail = event.notification.message_type === 'verify_email';
+
+    let finalHtmlBody = htmlBody;
+    let finalTextBody = textBody;
+
+    // For verification emails, wrap in Be Autogenic template while preserving verification links
+    if (isVerificationEmail) {
+      const t = (key) => getTranslation(key);
+
+      // Extract verification link from textBody (as per requirements)
+      // Look for Auth0 verification URL pattern in the plain text
+      const verificationLinkMatch = textBody.match(/https:\/\/autogenic\.eu\.auth0\.com\/u\/email-verification[^\s]+/);
+      const verificationLink = verificationLinkMatch ? verificationLinkMatch[0] : '#';
+
+      // Create Be Autogenic styled verification email
+      const verificationContent = `
+        <div style="text-align: center;">
+            <div class="icon">🔐</div>
+            <h2>${t('verify_title')}</h2>
+        </div>
+
+        <p>${t('hi')} ${toName.split('@')[0]},</p>
+
+        <p>${t('verify_intro')}</p>
+
+        <div class="card success-card">
+            <h3 style="margin-top: 0; color: ${EMAIL_COLORS.calm_green};">${t('verify_instructions')}</h3>
+        </div>
+
+        <div style="text-align: center; margin: 30px 0;">
+            <a href="${verificationLink}" class="button" style="color: ${EMAIL_COLORS.white} !important; text-decoration: none;">
+                ${t('verify_button')}
+            </a>
+        </div>
+
+        <p style="color: ${EMAIL_COLORS.dark_gray}; font-size: 14px; margin-top: 30px;">
+            <em>${t('verify_expiration')}</em>
+        </p>
+
+        <p style="font-size: 12px; color: ${EMAIL_COLORS.soft_gray}; margin-top: 20px;">
+            ${t('verify_help')}
+        </p>
+
+        <p style="margin-top: 30px;">${t('verify_sign_off')}<br><strong>${t('the_team')}</strong></p>
+      `;
+
+      finalHtmlBody = await getBeAutogenicEmailTemplate(verificationContent);
+      finalTextBody = `${t('hi')} ${toName.split('@')[0]},\n\n${t('verify_intro')}\n\n${t('verify_instructions')}\n${verificationLink}\n\n${t('verify_expiration')}\n\n${t('verify_help')}\n\n${t('verify_sign_off')}\n${t('the_team')}`;
+    } else {
+      // For non-verification emails, wrap the original content in Be Autogenic template
+      // Extract main content from original HTML (strip headers, footers, etc.)
+      const contentMatch = htmlBody.match(/<body[^>]*>([\s\S]*)<\/body>/i);
+      const mainContent = contentMatch ? contentMatch[1] : htmlBody;
+
+      // Clean up the content to remove any existing styling that might conflict
+      const cleanedContent = mainContent
+        .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '') // Remove style tags
+        .replace(/style=["'][^"']*["']/gi, '') // Remove inline styles
+        .replace(/class=["'][^"']*["']/gi, ''); // Remove class attributes
+
+      finalHtmlBody = await getBeAutogenicEmailTemplate(cleanedContent);
     }
 
     // Initialize Mailjet client
@@ -85,12 +396,12 @@ exports.onExecuteCustomEmailProvider = async (event, api) => {
           To: [
             {
               Email: to,
-              Name: toName || 'User'
+              Name: toName.split('@')?.[0] || 'User'
             }
           ],
           Subject: subject,
-          TextPart: textBody,
-          HTMLPart: htmlBody,
+          TextPart: finalTextBody,
+          HTMLPart: finalHtmlBody,
           CustomID: `Auth0Email_${Date.now()}`
         }
       ]
@@ -114,8 +425,11 @@ exports.onExecuteCustomEmailProvider = async (event, api) => {
     }
 
   } catch (error) {
-    logger.error(`Error sending email via Mailjet: ${error}`, {
-      error: error,
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    const errorDetails = error instanceof Error ? error : { message: String(error) };
+
+    logger.error(`Error sending email via Mailjet: ${errorMessage}`, {
+      error: errorDetails,
       eventDetails: {
         to: event.notification.to,
         subject: event.notification.subject,
@@ -124,6 +438,10 @@ exports.onExecuteCustomEmailProvider = async (event, api) => {
     });
 
     // Re-throw the error to let Auth0 handle it appropriately
-    throw error;
+    if (error instanceof Error) {
+      throw error;
+    } else {
+      throw new Error(errorMessage);
+    }
   }
 };
