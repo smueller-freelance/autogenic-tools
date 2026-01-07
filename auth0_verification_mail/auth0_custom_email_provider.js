@@ -91,6 +91,62 @@ const EMAIL_TRANSLATIONS = {
     verify_expiration: 'This verification link will expire in 24 hours.',
     verify_help: 'If you didn\'t request this verification, you can safely ignore this email.',
     verify_sign_off: 'Looking forward to helping you relax,'
+  },
+  'de': {
+    app_name: 'Be Autogenic',
+    tagline: 'Ihre Reise zu Entspannung und besserem Schlaf',
+    footer_text: 'Diese E-Mail wurde Ihnen gesendet, weil Sie ein Konto bei Be Autogenic haben.',
+    hi: 'Hallo',
+    best_regards: 'Mit freundlichen Grüßen',
+    the_team: 'Das Be Autogenic Team',
+    welcome_subject: 'Willkommen bei Be Autogenic!',
+    welcome_title: 'Willkommen bei Be Autogenic!',
+    welcome_intro: 'Wir freuen uns sehr, Sie an Bord zu haben! Sie haben gerade den ersten Schritt zu einem entspannteren, friedlicheren Ich gemacht.',
+    welcome_account_ready: '✓ Ihr Konto ist bereit!',
+    welcome_account_text: 'Sie können jetzt personalisierte autogene Trainingssitzungen erstellen, die auf Ihre Bedürfnisse zugeschnitten sind.',
+    welcome_whats_next: 'Was kommt als Nächstes?',
+    welcome_whats_next_intro: 'Hier sind einige Dinge, die Sie erkunden können:',
+    welcome_create_session: 'Erstellen Sie Ihre erste Sitzung – Passen Sie sie mit Ihrer bevorzugten Sprache und Einstellungen an',
+    welcome_discover: 'Entdecken Sie autogenes Training – Erfahren Sie mehr über diese kraftvolle Entspannungstechnik',
+    welcome_set_routine: 'Erstellen Sie Ihre Routine – Regelmäßiges Üben bringt die besten Ergebnisse',
+    welcome_closing: 'Denken Sie daran: Die Reise zur tiefen Entspannung beginnt mit einer einzigen Sitzung. Wir sind hier, um Sie bei jedem Schritt zu unterstützen.',
+    welcome_sign_off: 'Wir wünschen Ihnen friedliche Momente,',
+    verify_subject: 'Bestätigen Sie Ihre E-Mail-Adresse für Be Autogenic',
+    verify_title: 'Bestätigen Sie Ihre E-Mail-Adresse',
+    verify_intro: 'Willkommen bei Be Autogenic! Bitte bestätigen Sie Ihre E-Mail-Adresse, um Ihre Registrierung abzuschließen.',
+    verify_instructions: 'Klicken Sie auf die Schaltfläche unten, um Ihre E-Mail-Adresse zu bestätigen:',
+    verify_button: 'E-MAIL-ADRESSE BESTÄTIGEN',
+    verify_expiration: 'Dieser Bestätigungslink läuft in 24 Stunden ab.',
+    verify_help: 'Wenn Sie diese Bestätigung nicht angefordert haben, können Sie diese E-Mail sicher ignorieren.',
+    verify_sign_off: 'Wir freuen uns darauf, Ihnen beim Entspannen zu helfen,'
+  },
+  'ro': {
+    app_name: 'Be Autogenic',
+    tagline: 'Călătoria ta către relaxare și somn mai bun',
+    footer_text: 'Acest e-mail v-a fost trimis deoarece aveți un cont la Be Autogenic.',
+    hi: 'Bună',
+    best_regards: 'Cu stimă',
+    the_team: 'Echipa Be Autogenic',
+    welcome_subject: 'Bun venit la Be Autogenic!',
+    welcome_title: 'Bun venit la Be Autogenic!',
+    welcome_intro: 'Suntem încântați să vă avem alături! Tocmai ați făcut primul pas către o versiune mai relaxată și liniștită a dvs.',
+    welcome_account_ready: '✓ Contul dvs. este gata!',
+    welcome_account_text: 'Acum puteți începe să creați sesiuni de antrenament autogen personalizate, adaptate nevoilor dvs.',
+    welcome_whats_next: 'Ce urmează?',
+    welcome_whats_next_intro: 'Iată câteva lucruri pe care le puteți explora:',
+    welcome_create_session: 'Creați prima sesiune – Personalizați-o cu limba și setările preferate',
+    welcome_discover: 'Descoperiți antrenamentul autogen – Aflați despre această tehnică puternică de relaxare',
+    welcome_set_routine: 'Stabiliți rutina – Practica regulată aduce cele mai bune rezultate',
+    welcome_closing: 'Nu uitați, călătoria către relaxarea profundă începe cu o singură sesiune. Suntem aici pentru a vă susține la fiecare pas.',
+    welcome_sign_off: 'Vă dorim momente pașnice,',
+    verify_subject: 'Confirmați adresa dvs. de e-mail',
+    verify_title: 'Confirmați adresa dvs. de e-mail',
+    verify_intro: 'Bun venit la Be Autogenic! Vă rugăm să confirmați adresa dvs. de e-mail pentru a finaliza înregistrarea.',
+    verify_instructions: 'Faceți clic pe butonul de mai jos pentru a vă confirma adresa de e-mail:',
+    verify_button: 'CONFIRMAȚI ADRESA DE E-MAIL',
+    verify_expiration: 'Acest link de confirmare va expira în 24 de ore.',
+    verify_help: 'Dacă nu ați solicitat această confirmare, puteți ignora în siguranță acest e-mail.',
+    verify_sign_off: 'Ne bucurăm să vă ajutăm să vă relaxați,'
   }
 };
 
@@ -292,10 +348,22 @@ exports.onExecuteCustomEmailProvider = async (event, api) => {
   try {
     // Extract email details from the event
     const to = event.notification.to;
-    const toName = event.user?.name || event.user?.nickname || event.user?.email || 'User';
-    const subject = 'Verify your email for Be Autogenic';
+    // event.user.name is updated by Auth0 too late during signup
+    const toName = event.user.user_metadata.name || event.user.name || 'User';
     const textBody = event.notification.text;
     const htmlBody = event.notification.html;
+
+    // Extract locale from Auth0 event (sent by backend during signup/profile update)
+    // Try to get locale from user metadata, app_metadata, or direct locale field
+    const userLocale = event.user.user_metadata?.locale ||
+                      event.user?.app_metadata?.locale ||
+                      event.user?.locale ||
+                      event.notification.locale ||
+                      'en';
+
+    // Normalize locale to supported languages (en, de, ro)
+    const normalizedLocale = userLocale?.startsWith('de') ? 'de' :
+                           userLocale?.startsWith('ro') ? 'ro' : 'en';
 
     // Get Mailjet credentials from environment variables
     const mailjetApiKey = event.secrets.MAILJET_API_KEY;
@@ -316,10 +384,13 @@ exports.onExecuteCustomEmailProvider = async (event, api) => {
 
     let finalHtmlBody = htmlBody;
     let finalTextBody = textBody;
+    let subject = event.notification.subject;
 
     // For verification emails, wrap in Be Autogenic template while preserving verification links
     if (isVerificationEmail) {
-      const t = (key) => getTranslation(key);
+      const t = (key) => getTranslation(key, normalizedLocale);
+
+      subject = t('verify_subject');
 
       // Extract verification link from textBody (as per requirements)
       // Look for Auth0 verification URL pattern in the plain text
@@ -358,7 +429,7 @@ exports.onExecuteCustomEmailProvider = async (event, api) => {
         <p style="margin-top: 30px;">${t('verify_sign_off')}<br><strong>${t('the_team')}</strong></p>
       `;
 
-      finalHtmlBody = await getBeAutogenicEmailTemplate(verificationContent);
+      finalHtmlBody = await getBeAutogenicEmailTemplate(verificationContent, normalizedLocale);
       finalTextBody = `${t('hi')} ${toName.split('@')[0]},\n\n${t('verify_intro')}\n\n${t('verify_instructions')}\n${verificationLink}\n\n${t('verify_expiration')}\n\n${t('verify_help')}\n\n${t('verify_sign_off')}\n${t('the_team')}`;
     } else {
       // For non-verification emails, wrap the original content in Be Autogenic template
@@ -372,7 +443,7 @@ exports.onExecuteCustomEmailProvider = async (event, api) => {
         .replace(/style=["'][^"']*["']/gi, '') // Remove inline styles
         .replace(/class=["'][^"']*["']/gi, ''); // Remove class attributes
 
-      finalHtmlBody = await getBeAutogenicEmailTemplate(cleanedContent);
+      finalHtmlBody = await getBeAutogenicEmailTemplate(cleanedContent, normalizedLocale);
     }
 
     // Initialize Mailjet client
