@@ -46,7 +46,7 @@ const logger = new Auth0EmailLogger();
 exports.onExecuteCustomEmailProvider = async (event, api) => {
   try {
     // Extract email details from the event
-    const to = event.user.email;
+    const to = event.notification.to;
     const toName = event.user.nickname;
     const subject = event.notification.subject;
     const textBody = event.notification.text;
@@ -64,7 +64,14 @@ exports.onExecuteCustomEmailProvider = async (event, api) => {
     }
 
     // Initialize Mailjet client
-    const mailjetClient = mailjet.connect(mailjetApiKey, mailjetApiSecret);
+    const mailjetClient = mailjet.apiConnect(
+      mailjetApiKey,
+      mailjetApiSecret,
+      {
+        config: {},
+        options: {}
+      }
+    );
 
     // Prepare email data for Mailjet API
     const emailData = {
@@ -89,9 +96,11 @@ exports.onExecuteCustomEmailProvider = async (event, api) => {
     };
 
     // Send email via Mailjet
-    const response = await mailjetClient
+    const request = mailjetClient
       .post('send', { version: 'v3.1' })
       .request(emailData);
+
+    const response = await request;
 
     if (response.body.Messages && response.body.Messages[0].Status === 'success') {
       logger.info(`Email sent successfully to ${to} via Mailjet`);

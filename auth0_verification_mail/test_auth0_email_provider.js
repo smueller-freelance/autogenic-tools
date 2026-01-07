@@ -7,7 +7,7 @@
 
 // Mock the Mailjet client for testing
 const mockMailjet = {
-  connect: (apiKey, apiSecret) => {
+  apiConnect: (apiKey, apiSecret, options) => {
     console.log(`[MOCK] Mailjet client connected with API key: ${apiKey.substring(0, 8)}...`);
 
     return {
