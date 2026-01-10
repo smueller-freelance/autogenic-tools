@@ -349,7 +349,7 @@ exports.onExecuteCustomEmailProvider = async (event, api) => {
     // Extract email details from the event
     const to = event.notification.to;
     // event.user.name is updated by Auth0 too late during signup
-    const toName = event.user.user_metadata.name || event.user.name || 'User';
+    const toName = event.user.user_metadata?.name || event.user.name || 'User';
     const textBody = event.notification.text;
     const htmlBody = event.notification.html;
 
