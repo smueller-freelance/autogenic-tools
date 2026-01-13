@@ -88,6 +88,7 @@ const EMAIL_TRANSLATIONS = {
     verify_intro: 'Welcome to Be Autogenic! Please verify your email address to complete your registration.',
     verify_instructions: 'Click the button below to verify your email address:',
     verify_button: 'VERIFY EMAIL ADDRESS',
+    verify_link_backup: 'If the button doesn\'t work, copy and paste this link into your browser:',
     verify_expiration: 'This verification link will expire in 24 hours.',
     verify_help: 'If you didn\'t request this verification, you can safely ignore this email.',
     verify_sign_off: 'Looking forward to helping you relax,'
@@ -116,6 +117,7 @@ const EMAIL_TRANSLATIONS = {
     verify_intro: 'Willkommen bei Be Autogenic! Bitte bestätigen Sie Ihre E-Mail-Adresse, um Ihre Registrierung abzuschließen.',
     verify_instructions: 'Klicken Sie auf die Schaltfläche unten, um Ihre E-Mail-Adresse zu bestätigen:',
     verify_button: 'E-MAIL-ADRESSE BESTÄTIGEN',
+    verify_link_backup: 'Wenn die Schaltfläche nicht funktioniert, kopieren Sie diesen Link und fügen Sie ihn in Ihren Browser ein:',
     verify_expiration: 'Dieser Bestätigungslink läuft in 24 Stunden ab.',
     verify_help: 'Wenn Sie diese Bestätigung nicht angefordert haben, können Sie diese E-Mail sicher ignorieren.',
     verify_sign_off: 'Wir freuen uns darauf, Ihnen beim Entspannen zu helfen,'
@@ -144,6 +146,7 @@ const EMAIL_TRANSLATIONS = {
     verify_intro: 'Bun venit la Be Autogenic! Vă rugăm să confirmați adresa dvs. de e-mail pentru a finaliza înregistrarea.',
     verify_instructions: 'Faceți clic pe butonul de mai jos pentru a vă confirma adresa de e-mail:',
     verify_button: 'CONFIRMAȚI ADRESA DE E-MAIL',
+    verify_link_backup: 'Dacă butonul nu funcționează, copiați și inserați acest link în browserul dvs.:',
     verify_expiration: 'Acest link de confirmare va expira în 24 de ore.',
     verify_help: 'Dacă nu ați solicitat această confirmare, puteți ignora în siguranță acest e-mail.',
     verify_sign_off: 'Ne bucurăm să vă ajutăm să vă relaxați,'
@@ -417,6 +420,13 @@ exports.onExecuteCustomEmailProvider = async (event, api) => {
                 ${t('verify_button')}
             </a>
         </div>
+
+        <p style="color: ${EMAIL_COLORS.dark_gray}; font-size: 13px; text-align: center; margin-top: 20px;">
+            ${t('verify_link_backup')}
+        </p>
+        <p style="color: ${EMAIL_COLORS.primary_blue}; font-size: 12px; text-align: center; word-break: break-all; margin-top: 10px;">
+            <a href="${verificationLink}" style="color: ${EMAIL_COLORS.primary_blue}; text-decoration: underline;">${verificationLink}</a>
+        </p>
 
         <p style="color: ${EMAIL_COLORS.dark_gray}; font-size: 14px; margin-top: 30px;">
             <em>${t('verify_expiration')}</em>
