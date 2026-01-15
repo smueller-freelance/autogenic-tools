@@ -91,7 +91,16 @@ const EMAIL_TRANSLATIONS = {
     verify_link_backup: 'If the button doesn\'t work, copy and paste this link into your browser:',
     verify_expiration: 'This verification link will expire in 24 hours.',
     verify_help: 'If you didn\'t request this verification, you can safely ignore this email.',
-    verify_sign_off: 'Looking forward to helping you relax,'
+    verify_sign_off: 'Looking forward to helping you relax,',
+    reset_subject: 'Reset Your Password - Be Autogenic',
+    reset_title: 'Reset Your Password',
+    reset_intro: 'We received a request to reset your password for your Be Autogenic account.',
+    reset_instructions: 'Click the button below to reset your password:',
+    reset_button: 'RESET PASSWORD',
+    reset_link_backup: 'If the button doesn\'t work, copy and paste this link into your browser:',
+    reset_expiration: 'This password reset link will expire in 1 hour for security reasons.',
+    reset_help: 'If you didn\'t request this password reset, you can safely ignore this email. Your password will remain unchanged.',
+    reset_sign_off: 'Stay secure,'
   },
   'de': {
     app_name: 'Be Autogenic',
@@ -120,7 +129,16 @@ const EMAIL_TRANSLATIONS = {
     verify_link_backup: 'Wenn die Schaltfläche nicht funktioniert, kopieren Sie diesen Link und fügen Sie ihn in Ihren Browser ein:',
     verify_expiration: 'Dieser Bestätigungslink läuft in 24 Stunden ab.',
     verify_help: 'Wenn Sie diese Bestätigung nicht angefordert haben, können Sie diese E-Mail sicher ignorieren.',
-    verify_sign_off: 'Wir freuen uns darauf, Ihnen beim Entspannen zu helfen,'
+    verify_sign_off: 'Wir freuen uns darauf, Ihnen beim Entspannen zu helfen,',
+    reset_subject: 'Passwort zurücksetzen - Be Autogenic',
+    reset_title: 'Passwort zurücksetzen',
+    reset_intro: 'Wir haben eine Anfrage zum Zurücksetzen Ihres Passworts für Ihr Be Autogenic-Konto erhalten.',
+    reset_instructions: 'Klicken Sie auf die Schaltfläche unten, um Ihr Passwort zurückzusetzen:',
+    reset_button: 'PASSWORT ZURÜCKSETZEN',
+    reset_link_backup: 'Wenn die Schaltfläche nicht funktioniert, kopieren Sie diesen Link und fügen Sie ihn in Ihren Browser ein:',
+    reset_expiration: 'Dieser Link zum Zurücksetzen des Passworts läuft aus Sicherheitsgründen in 1 Stunde ab.',
+    reset_help: 'Wenn Sie dieses Zurücksetzen des Passworts nicht angefordert haben, können Sie diese E-Mail sicher ignorieren. Ihr Passwort bleibt unverändert.',
+    reset_sign_off: 'Bleiben Sie sicher,'
   },
   'ro': {
     app_name: 'Be Autogenic',
@@ -149,7 +167,16 @@ const EMAIL_TRANSLATIONS = {
     verify_link_backup: 'Dacă butonul nu funcționează, copiați și inserați acest link în browserul dvs.:',
     verify_expiration: 'Acest link de confirmare va expira în 24 de ore.',
     verify_help: 'Dacă nu ați solicitat această confirmare, puteți ignora în siguranță acest e-mail.',
-    verify_sign_off: 'Ne bucurăm să vă ajutăm să vă relaxați,'
+    verify_sign_off: 'Ne bucurăm să vă ajutăm să vă relaxați,',
+    reset_subject: 'Resetează parola - Be Autogenic',
+    reset_title: 'Resetează parola',
+    reset_intro: 'Am primit o solicitare de resetare a parolei pentru contul dvs. Be Autogenic.',
+    reset_instructions: 'Faceți clic pe butonul de mai jos pentru a vă reseta parola:',
+    reset_button: 'RESETEAZĂ PAROLA',
+    reset_link_backup: 'Dacă butonul nu funcționează, copiați și inserați acest link în browserul dvs.:',
+    reset_expiration: 'Acest link de resetare a parolei va expira în 1 oră din motive de securitate.',
+    reset_help: 'Dacă nu ați solicitat această resetare a parolei, puteți ignora în siguranță acest e-mail. Parola dvs. va rămâne neschimbată.',
+    reset_sign_off: 'Rămâneți în siguranță,'
   }
 };
 
@@ -379,11 +406,9 @@ exports.onExecuteCustomEmailProvider = async (event, api) => {
       throw new Error('Mailjet not configured');
     }
 
-    // Determine email type based on subject/content
-    //const isVerificationEmail = subject.toLowerCase().includes('verify') ||
-    //                           textBody.toLowerCase().includes('verify') ||
-    //                           htmlBody.toLowerCase().includes('verify');
+    // Determine email type based on message_type
     const isVerificationEmail = event.notification.message_type === 'verify_email';
+    const isResetEmail = event.notification.message_type === 'reset_email';
 
     let finalHtmlBody = htmlBody;
     let finalTextBody = textBody;
@@ -441,6 +466,56 @@ exports.onExecuteCustomEmailProvider = async (event, api) => {
 
       finalHtmlBody = await getBeAutogenicEmailTemplate(verificationContent, normalizedLocale);
       finalTextBody = `${t('hi')} ${toName.split('@')[0]},\n\n${t('verify_intro')}\n\n${t('verify_instructions')}\n${verificationLink}\n\n${t('verify_expiration')}\n\n${t('verify_help')}\n\n${t('verify_sign_off')}\n${t('the_team')}`;
+    } else if (isResetEmail) {
+      // Handle password reset emails with custom Be Autogenic styling
+      const t = (key) => getTranslation(key, normalizedLocale);
+      subject = t('reset_subject');
+
+      // Extract password reset link from textBody
+      const resetLinkMatch = textBody.match(/https:\/\/autogenic\.eu\.auth0\.com\/[^\s]+/);
+      const resetLink = resetLinkMatch ? resetLinkMatch[0] : '#';
+
+      // Create Be Autogenic styled reset email
+      const resetContent = `
+        <div style="text-align: center;">
+            <div class="icon">🔒</div>
+            <h2>${t('reset_title')}</h2>
+        </div>
+
+        <p>${t('hi')} ${toName.split('@')[0]},</p>
+
+        <p>${t('reset_intro')}</p>
+
+        <div class="card">
+            <h3 style="margin-top: 0; color: ${EMAIL_COLORS.primary_blue};">${t('reset_instructions')}</h3>
+        </div>
+
+        <div style="text-align: center; margin: 30px 0;">
+            <a href="${resetLink}" class="button" style="color: ${EMAIL_COLORS.white} !important; text-decoration: none;">
+                ${t('reset_button')}
+            </a>
+        </div>
+
+        <p style="color: ${EMAIL_COLORS.dark_gray}; font-size: 13px; text-align: center; margin-top: 20px;">
+            ${t('reset_link_backup')}
+        </p>
+        <p style="color: ${EMAIL_COLORS.primary_blue}; font-size: 12px; text-align: center; word-break: break-all; margin-top: 10px;">
+            <a href="${resetLink}" style="color: ${EMAIL_COLORS.primary_blue}; text-decoration: underline;">${resetLink}</a>
+        </p>
+
+        <p style="color: ${EMAIL_COLORS.dark_gray}; font-size: 14px; margin-top: 30px;">
+            <em>${t('reset_expiration')}</em>
+        </p>
+
+        <p style="font-size: 12px; color: ${EMAIL_COLORS.soft_gray}; margin-top: 20px;">
+            ${t('reset_help')}
+        </p>
+
+        <p style="margin-top: 30px;">${t('reset_sign_off')}<br><strong>${t('the_team')}</strong></p>
+      `;
+
+      finalHtmlBody = await getBeAutogenicEmailTemplate(resetContent, normalizedLocale);
+      finalTextBody = `${t('hi')} ${toName.split('@')[0]},\n\n${t('reset_intro')}\n\n${t('reset_instructions')}\n${resetLink}\n\n${t('reset_expiration')}\n\n${t('reset_help')}\n\n${t('reset_sign_off')}\n${t('the_team')}`;
     } else {
       // For non-verification emails, wrap the original content in Be Autogenic template
       // Extract main content from original HTML (strip headers, footers, etc.)
