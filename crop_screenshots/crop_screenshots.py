@@ -152,7 +152,12 @@ Examples:
     success_count = 0
     fail_count = 0
 
+    input_paths = []
     for input_path in args.inputs:
+        if not input_path.endswith('_cropped.jpg'):
+            input_paths.append(input_path)
+
+    for input_path in input_paths:
         # Generate output path
         if args.output_dir:
             output_dir = Path(args.output_dir)
